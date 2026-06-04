@@ -96,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget _dot(int index) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (_, __) {
+      builder: (_, _) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: 8,

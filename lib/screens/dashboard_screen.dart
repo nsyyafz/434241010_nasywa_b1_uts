@@ -18,7 +18,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _navIndex = 0;
+  final int _navIndex = 0;
 
   void _onNavTap(int index) {
     if (index == 0) return;
