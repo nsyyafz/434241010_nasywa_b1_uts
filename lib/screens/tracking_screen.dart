@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/ticket_model.dart';
 import '../theme/app_theme.dart';
+import '../widgets/progress_ticket_bar.dart';
 
 class TrackingScreen extends StatelessWidget {
   final Ticket ticket;
@@ -16,33 +17,26 @@ class TrackingScreen extends StatelessWidget {
     ];
 
     switch (ticket.status) {
-      case 'Open':
+      case 'open':
         allSteps[0]['status'] = 'done';
         allSteps[1]['status'] = 'pending';
         allSteps[2]['status'] = 'pending';
         allSteps[3]['status'] = 'pending';
         break;
-      case 'In Progress':
+      case 'in_progress':
         allSteps[0]['status'] = 'done';
         allSteps[1]['status'] = 'done';
         allSteps[2]['status'] = 'active';
         allSteps[3]['status'] = 'pending';
         break;
-      case 'Pending':
-        allSteps[0]['status'] = 'done';
-        allSteps[1]['status'] = 'done';
-        allSteps[2]['status'] = 'active';
-        allSteps[3]['status'] = 'pending';
-        allSteps[2]['sub'] = 'Menunggu informasi tambahan dari pelapor';
-        break;
-      case 'Closed':
+      case 'closed':
         allSteps[0]['status'] = 'done';
         allSteps[1]['status'] = 'done';
         allSteps[2]['status'] = 'done';
         allSteps[3]['status'] = 'done';
         allSteps[3]['sub'] = 'Tiket telah diselesaikan';
         break;
-      case 'Rejected':
+      case 'rejected':
         allSteps[0]['status'] = 'done';
         allSteps[1]['status'] = 'done';
         allSteps[2]['status'] = 'done';
@@ -54,25 +48,55 @@ class TrackingScreen extends StatelessWidget {
     return allSteps;
   }
 
+  // ===== BARU: hitung persentase progres secara dinamis =====
+  int _getProgressPercent() {
+    final steps = _getSteps();
+    final doneCount = steps.where((s) => s['status'] == 'done').length;
+    final hasActive = steps.any((s) => s['status'] == 'active');
+    final hasRejected = steps.any((s) => s['status'] == 'rejected');
+    if (hasRejected) return 100;
+    return ((doneCount * 25) + (hasActive ? 25 : 0)).clamp(0, 100);
+  }
+
+  String _getProgressLabel() {
+    if (ticket.status == 'rejected') return 'Ditolak';
+    if (ticket.status == 'closed') return 'Selesai';
+    return 'Sedang Diproses';
+  }
+
+  Color _getProgressColor() {
+    if (ticket.status == 'rejected') return AppTheme.danger;
+    if (ticket.status == 'closed') return AppTheme.success;
+    return AppTheme.primary;
+  }
+
   Color _statusColor(String s) {
     switch (s) {
-      case 'Open': return AppTheme.success;
-      case 'In Progress': return AppTheme.primary;
-      case 'Pending': return AppTheme.warning;
-      case 'Closed': return AppTheme.success;
-      case 'Rejected': return AppTheme.danger;
+      case 'open': return AppTheme.success;
+      case 'in_progress': return AppTheme.primary;
+      case 'closed': return AppTheme.success;
+      case 'rejected': return AppTheme.danger;
       default: return AppTheme.neutral;
     }
   }
 
   Color _statusBg(String s) {
     switch (s) {
-      case 'Open': return const Color(0xFFEAF3DE);
-      case 'In Progress': return const Color(0xFFE6F1FB);
-      case 'Pending': return const Color(0xFFFAEEDA);
-      case 'Closed': return const Color(0xFFEAF3DE);
-      case 'Rejected': return const Color(0xFFFCEBEB);
+      case 'open': return const Color(0xFFEAF3DE);
+      case 'in_progress': return const Color(0xFFE6F1FB);
+      case 'closed': return const Color(0xFFEAF3DE);
+      case 'rejected': return const Color(0xFFFCEBEB);
       default: return const Color(0xFFF1EFE8);
+    }
+  }
+
+  String _statusLabel(String s) {
+    switch (s) {
+      case 'open': return 'Open';
+      case 'in_progress': return 'In Progress';
+      case 'closed': return 'Closed';
+      case 'rejected': return 'Rejected';
+      default: return s;
     }
   }
 
@@ -101,7 +125,10 @@ class TrackingScreen extends StatelessWidget {
                 color: cardColor,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2)),
                 ],
               ),
               child: Column(
@@ -110,28 +137,58 @@ class TrackingScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('#${ticket.id}', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.neutral)),
+                      Text('#${ticket.id.substring(0, 8)}',
+                          style: GoogleFonts.inter(
+                              fontSize: 12, color: AppTheme.neutral)),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: _statusBg(ticket.status),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(ticket.status,
-                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                        child: Text(_statusLabel(ticket.status),
+                            style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
                                 color: _statusColor(ticket.status))),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(ticket.title, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text(ticket.title,
+                      style: GoogleFonts.inter(
+                          fontSize: 15, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
                   Text('Kategori: ${ticket.category}',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.neutral)),
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: AppTheme.neutral)),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // ===== BARU: Progress bar persentase =====
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2)),
+                ],
+              ),
+              child: ProgressTicketBar(
+                percent: _getProgressPercent(),
+                color: _getProgressColor(),
+                label: _getProgressLabel(),
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // Timeline
             Container(
@@ -141,13 +198,18 @@ class TrackingScreen extends StatelessWidget {
                 color: cardColor,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2)),
                 ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Progres Tiket', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text('Progres Tiket',
+                      style: GoogleFonts.inter(
+                          fontSize: 15, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 20),
                   ...List.generate(steps.length, (i) {
                     final step = steps[i];
@@ -170,11 +232,13 @@ class TrackingScreen extends StatelessWidget {
                 foregroundColor: AppTheme.primary,
                 side: const BorderSide(color: AppTheme.primary),
                 minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
               icon: const Icon(Icons.receipt_long_outlined, size: 18),
               label: Text('Lihat Detail Tiket',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+                  style: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -202,8 +266,11 @@ class TrackingScreen extends StatelessWidget {
       case 'active':
         circleColor = AppTheme.primary;
         lineColor = const Color(0xFFD3D1C7);
-        circleChild = Container(width: 8, height: 8,
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle));
+        circleChild = Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+                color: Colors.white, shape: BoxShape.circle));
         isDashed = true;
         break;
       case 'rejected':
@@ -225,16 +292,27 @@ class TrackingScreen extends StatelessWidget {
           children: [
             stepStatus == 'active'
                 ? Container(
-                    width: 28, height: 28,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: AppTheme.primary.withOpacity(0.15)),
-                    child: Center(child: Container(width: 20, height: 20,
-                        decoration: BoxDecoration(shape: BoxShape.circle, color: circleColor),
-                        child: Center(child: circleChild))))
-                : Container(width: 28, height: 28,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: circleColor),
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.primary.withOpacity(0.15)),
+                    child: Center(
+                        child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                                shape: BoxShape.circle, color: circleColor),
+                            child: Center(child: circleChild))))
+                : Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle, color: circleColor),
                     child: Center(child: circleChild)),
             if (!isLast)
-              CustomPaint(size: const Size(2, 50),
+              CustomPaint(
+                  size: const Size(2, 50),
                   painter: _LinePainter(color: lineColor, dashed: isDashed)),
           ],
         ),
@@ -246,12 +324,18 @@ class TrackingScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600,
-                        color: stepStatus == 'pending' ? AppTheme.neutral
-                            : stepStatus == 'rejected' ? AppTheme.danger
-                            : const Color(0xFF2C2C2A))),
+                    style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: stepStatus == 'pending'
+                            ? AppTheme.neutral
+                            : stepStatus == 'rejected'
+                                ? AppTheme.danger
+                                : const Color(0xFF2C2C2A))),
                 const SizedBox(height: 3),
-                Text(sub, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.neutral)),
+                Text(sub,
+                    style: GoogleFonts.inter(
+                        fontSize: 12, color: AppTheme.neutral)),
               ],
             ),
           ),
@@ -268,20 +352,25 @@ class _LinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color..strokeWidth = 2;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2;
     if (!dashed) {
-      canvas.drawLine(Offset(size.width / 2, 0), Offset(size.width / 2, size.height), paint);
+      canvas.drawLine(Offset(size.width / 2, 0),
+          Offset(size.width / 2, size.height), paint);
     } else {
       double y = 0;
       const dashH = 5.0;
       const gapH = 4.0;
       while (y < size.height) {
-        canvas.drawLine(Offset(size.width / 2, y), Offset(size.width / 2, y + dashH), paint);
+        canvas.drawLine(Offset(size.width / 2, y),
+            Offset(size.width / 2, y + dashH), paint);
         y += dashH + gapH;
       }
     }
   }
 
   @override
-  bool shouldRepaint(_LinePainter old) => old.color != color || old.dashed != dashed;
+  bool shouldRepaint(_LinePainter old) =>
+      old.color != color || old.dashed != dashed;
 }

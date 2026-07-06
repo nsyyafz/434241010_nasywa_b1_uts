@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
+import 'dashboard_screen.dart';
+import 'admin/dashboard_admin_screen.dart';
+import 'helpdesk/dashboard_helpdesk_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,13 +29,41 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
+    Future.delayed(const Duration(seconds: 3), () async {
+      if (!mounted) return;
+
+      final session = Supabase.instance.client.auth.currentSession;
+
+      if (session == null) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
         );
+        return;
       }
+
+      // Cek role user
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final res = await Supabase.instance.client
+          .from('users')
+          .select('role')
+          .eq('id', userId)
+          .single();
+
+      if (!mounted) return;
+
+      final role = res['role'] ?? 'user';
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => role == 'admin'
+              ? const DashboardAdminScreen()
+              : role == 'helpdesk'
+                  ? const DashboardHelpdeskScreen()  // ← tambah ini
+                  : const DashboardScreen(),
+        ),
+      );
     });
   }
 
@@ -96,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget _dot(int index) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (_, _) {
+      builder: (_, __) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: 8,

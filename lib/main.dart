@@ -9,7 +9,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://awfirzmedsqryyrxyebq.supabase.co/rest/v1/',  // ganti punya kamu
+    url: 'https://awfirzmedsqryyrxyebq.supabase.co',  // ganti punya kamu
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zmlyem1lZHNxcnl5cnh5ZWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNjc0NzEsImV4cCI6MjA5NTk0MzQ3MX0.AIpRfuOoso0EM4s2PvqcSSxVw0zpbbr-hQawzrmWsn8',         // ganti punya kamu
   );
 
