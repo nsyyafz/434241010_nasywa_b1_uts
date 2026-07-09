@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'theme/app_theme.dart';
-import 'screens/splash_screen.dart';
+import 'core/theme/app_theme.dart';
+import 'splash_screen.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -9,11 +10,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://awfirzmedsqryyrxyebq.supabase.co',  // ganti punya kamu
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zmlyem1lZHNxcnl5cnh5ZWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNjc0NzEsImV4cCI6MjA5NTk0MzQ3MX0.AIpRfuOoso0EM4s2PvqcSSxVw0zpbbr-hQawzrmWsn8',         // ganti punya kamu
+    url: 'https://awfirzmedsqryyrxyebq.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zmlyem1lZHNxcnl5cnh5ZWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNjc0NzEsImV4cCI6MjA5NTk0MzQ3MX0.AIpRfuOoso0EM4s2PvqcSSxVw0zpbbr-hQawzrmWsn8',
   );
 
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
