@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/user_repository.dart';
+import 'notification_provider.dart';
 
 // =====================================================================
 // REPOSITORY
@@ -23,22 +24,31 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
 /// (list_tiket, buat_tiket) tanpa perlu nama/email.
 final currentUserRoleProvider = FutureProvider.autoDispose<String>((ref) async {
   final supabase = Supabase.instance.client;
-  final userId = supabase.auth.currentUser!.id;
-  final res =
-      await supabase.from('users').select('role').eq('id', userId).single();
+  final userId = supabase.auth.currentUser?.id;
+  if (userId == null) {
+    // Lagi di tengah transisi logout/login, belum ada session valid.
+    // Return default sementara, biar gak crash — provider bakal
+    // di-invalidate lagi begitu login sukses dan fetch ulang dengan benar.
+    return 'user';
+  }
+  final res = await supabase.from('users').select('role').eq('id', userId).single();
   return res['role'] ?? 'user';
 });
 
 final userNameProvider = FutureProvider.autoDispose<String>((ref) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return '';
   final repo = ref.watch(userRepositoryProvider);
-  final userId = Supabase.instance.client.auth.currentUser!.id;
   return repo.getUserName(userId);
 });
 
-/// Data lengkap buat ProfileScreen: nama, email, role dalam SATU query.
 final userProfileProvider = FutureProvider.autoDispose<UserProfile>((ref) async {
   final supabase = Supabase.instance.client;
-  final userId = supabase.auth.currentUser!.id;
+  final userId = supabase.auth.currentUser?.id;
+  if (userId == null) {
+    // State transisi logout/login — kembalikan profil kosong sementara.
+    return const UserProfile(fullName: '', email: '', role: 'user');
+  }
   final res = await supabase
       .from('users')
       .select('full_name, email, role')
@@ -102,6 +112,10 @@ class AuthController {
 /// pemanggil kalau providernya bukan dari file ini).
 void invalidateUserProviders(WidgetRef ref) {
   ref.invalidate(userProfileProvider);
-  ref.invalidate(currentUserRoleProvider);
+  ref.invalidate(currentUserRoleProvider); // cascade otomatis ke ticketsProvider & ticketStatsProvider
   ref.invalidate(userNameProvider);
+  ref.invalidate(unreadNotifCountProvider);
+
+  // reset tab biar gak nyasar ke tab terakhir sebelum logout (misal Profile)
+  ref.read(mainNavIndexProvider.notifier).state = 0;
 }
